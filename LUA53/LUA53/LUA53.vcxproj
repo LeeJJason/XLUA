@@ -153,6 +153,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CFunction.c" />
+    <ClCompile Include="CRef.c" />
     <ClCompile Include="CStack.c" />
     <ClCompile Include="CTable.c" />
     <ClCompile Include="LuaFunction.c" />

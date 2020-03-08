@@ -30,5 +30,8 @@
     <ClCompile Include="LuaFunction.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="CRef.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -8,6 +8,7 @@ int main()
 	//CStack();
 	//CTable();
 	//CFunction();
-	LuaFunction();
+	//LuaFunction();
+	CRef();
 	return 0;
 }
