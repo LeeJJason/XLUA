@@ -49,3 +49,4 @@ internal partial class InternalGlobals
 ### 1、strBuff 使用分析
 * [strBuff](strBuff/README.md) 用于在线程安全时，作为 C# 字符串到 LUA的 byte buffer。
 * [objectTranslatorPool](ObjectTranslatorPool/README.md) 作为 ObjectTranslator 对应于每个lua 虚拟机的缓存池。
+* [supportOp](supportOp/README.md) 作为C#于LUA间操作符重载。
