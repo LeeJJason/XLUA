@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>特性</title>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="%e7%89%b9%e6%80%a7">特性</h1>
+<h2 id="%e6%80%bb%e4%bd%93">总体</h2>
+<ul>
+<li>Lua虚拟机支持</li>
+<li>Lua5.3</li>
+<li>Luajit2.1</li>
+<li>Unity3D版本支持</li>
+<li>各版本均支持</li>
+<li>平台支持</li>
+<li>windows 64/32</li>
+<li>android</li>
+<li>ios 64/32/bitcode</li>
+<li>osx</li>
+<li>uwp</li>
+<li>webgl</li>
+<li>互访技术</li>
+<li>生成适配代码</li>
+<li>反射</li>
+<li>易用性</li>
+<li>解压即可用</li>
+<li>开发期无需生成代码</li>
+<li>生成代码和反射间可无缝切换</li>
+<li>更简单的无GC api</li>
+<li>菜单简单易懂</li>
+<li>配置可以多份，按模块划分，也可以直接在目标类型上打Attribute标签</li>
+<li>自动生成link.xml防止代码剪裁</li>
+<li>Plugins部分采用cmake编译，更简单</li>
+<li>核心代码不依赖生成代码，可以随时删除生成目录</li>
+<li>性能</li>
+<li>Lazyload技术，避免用不上的类型的开销</li>
+<li>lua函数映射到c# delegate，lua table映射到interface，可实现接口层面无C# gc alloc开销</li>
+<li>所有基本值类型，所有枚举，字段都是值类型的struct，在Lua和C#间传递无C# gc alloc</li>
+<li>LuaTable，LuaFunction提供无gc访问接口</li>
+<li>通过代码生成期的静态分析，生成最优代码</li>
+<li>支持C#和Lua间指针传递</li>
+<li>自动解除已经Destroy的UnityEngine.Object的引用</li>
+<li>扩展性</li>
+<li>不用改代码就可以加入Lua第三方扩展</li>
+<li>生成引擎提供接口做二次开发</li>
+</ul>
+<h2 id="%e6%94%af%e6%8c%81%e4%b8%ba%e5%a6%82%e4%b8%8bc%e5%ae%9e%e7%8e%b0%e6%89%93%e8%a1%a5%e4%b8%81">支持为如下C#实现打补丁</h2>
+<ul>
+<li>构造函数</li>
+<li>析构函数</li>
+<li>成员函数</li>
+<li>静态函数</li>
+<li>泛化函数</li>
+<li>操作符重载</li>
+<li>成员属性</li>
+<li>静态属性</li>
+<li>事件</li>
+</ul>
+<h2 id="lua%e4%bb%a3%e7%a0%81%e5%8a%a0%e8%bd%bd">Lua代码加载</h2>
+<ul>
+<li>加载字符串</li>
+<li>支持加载后立即执行</li>
+<li>支持加载后返回一个delegate或者LuaFunction，调用delegate或者LuaFunction后可传脚本参数</li>
+<li>Resources目录的文件</li>
+<li>直接require</li>
+<li>自定义loader</li>
+<li>Lua里头require时触发</li>
+<li>require参数透传给loader，loader读取Lua代码返回</li>
+<li>Lua原有的方式</li>
+<li>Lua原有的方式都保留</li>
+</ul>
+<h2 id="lua%e8%b0%83%e7%94%a8c">Lua调用C#</h2>
+<ul>
+<li>创建C#对象</li>
+<li>C#静态属性，字段</li>
+<li>C#静态方法</li>
+<li>C#成员属性，字段</li>
+<li>C#成员方法</li>
+<li>C#继承</li>
+<li>子类对象可以直接调用父类的方法，访问父类属性</li>
+<li>子类模块可以直接调用父类的静态方法，静态属性</li>
+<li>扩展方法（Extension methods）</li>
+<li>就像普通成员方法一样使用</li>
+<li>参数的输入输出属性（out，ref）</li>
+<li>out对应一个lua返回值</li>
+<li>ref对应一个lua参数以及一个lua返回值</li>
+<li>函数重载</li>
+<li>支持重载</li>
+<li>由于lua数据类型远比C#要少，会出现无法判断的情况，可通过扩展方法来来调用。</li>
+<li>操作符重载</li>
+<li>支持的操作符：+，-，*，/，==，一元-，&lt;，&lt;=， %，[]</li>
+<li>其它操作符可以借助扩展方法调用</li>
+<li>参数默认值</li>
+<li>C#参数有默认值，在lua可以不传</li>
+<li>可变参数</li>
+<li>在对应可变参数部分，直接输入一个个参数即可，不需要把这些参数扩到一个数组里头</li>
+<li>泛化方法调用</li>
+<li>静态方法可以自行封装使用</li>
+<li>成员函数可通过扩展方法封装使用</li>
+<li>枚举类型</li>
+<li>数字或字符串到枚举的转换</li>
+<li>delegate</li>
+<li>调用一个C# delegate</li>
+<li>+操作符</li>
+<li>-操作符</li>
+<li>把一个lua函数作为一个c# delegate传递给c#</li>
+<li>event</li>
+<li>增加事件回调</li>
+<li>移除事件回调</li>
+<li>64位整数</li>
+<li>传递无gc而且无精度损失</li>
+<li>lua53下使用原生64位支持</li>
+<li>可以和number运算</li>
+<li>以java的方式支持无符号64位整数</li>
+<li>table的自动转换到C#复杂类型</li>
+<li>obj.complexField = {a = 1, b = {c = 1}}，obj是一个C#对象，complexField是两层嵌套的struct或者class</li>
+<li>typeof</li>
+<li>对应C#的typeof操作符，返回Type对象</li>
+<li>lua侧直接clone</li>
+<li>decimal</li>
+<li>传递无gc而且无精度损失</li>
+</ul>
+<h2 id="c%e8%b0%83%e7%94%a8lua">C#调用Lua</h2>
+<ul>
+<li>调用Lua函数</li>
+<li>以delegate方式调用Lua函数</li>
+<li>以LuaFunction调用lua函数</li>
+<li>访问Lua的table</li>
+<li>LuaTable的泛化Get/Set接口，调用无gc，可指明Key，Value的类型</li>
+<li>用标注了CSharpCallLua的interface访问</li>
+<li>值拷贝到struct，class</li>
+</ul>
+<h2 id="lua%e8%99%9a%e6%8b%9f%e6%9c%ba">Lua虚拟机</h2>
+<ul>
+<li>虚拟机gc参数读取及设置</li>
+</ul>
+<h2 id="%e5%b7%a5%e5%85%b7%e9%93%be">工具链</h2>
+<ul>
+<li>Lua Profiler</li>
+<li>可根据函数调用总时长，平均每次调用时长，调用次数排序</li>
+<li>显示lua函数名及其所在文件的名字及行号</li>
+<li>如果C#函数，会显示这个是C#函数</li>
+<li>支持真机调试</li>
+</ul>
+
+    </body>
+    </html>

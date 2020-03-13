@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>生成引擎二次开发</title>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h2 id="%e7%94%9f%e6%88%90%e5%bc%95%e6%93%8e%e4%ba%8c%e6%ac%a1%e5%bc%80%e5%8f%91">生成引擎二次开发</h2>
+<p>xLua的生成引擎支持二次开发，你可以利用它来生成一些文本类型的文件（比如代码，配置等）。xLua本身的link.xml文件的生成就是一个生成引擎插件做的。其它应用场景，比如生成Lua IDE的自动完成配置文件，都可以用这特性来完成。</p>
+<h2 id="%e6%80%bb%e4%bd%93%e4%bb%8b%e7%bb%8d">总体介绍</h2>
+<p>插件需要提供两个东西：1、生成文件的模版；2、一个回调函数，该回调函数接受用户的配置，返回需要注入到模版的数据以及文件的输出流。</p>
+<h2 id="%e6%a8%a1%e7%89%88%e8%af%ad%e6%b3%95">模版语法</h2>
+<p>模版语法很简单，只有三种元素：</p>
+<ul>
+<li>eval：语法是&lt;%=exp%&gt;，exp是任意表达式，将计算并以字符串形式输出exp的值；</li>
+<li>code：语法是&lt;% if true then end%&gt;，蓝色部分是任意lua代码，这些代码会执行；</li>
+<li>literal：除eval和code之外其它部分，literal原样输出。</li>
+</ul>
+<p>示例：</p>
+<pre><code class="language-xml"><div><span class="hljs-tag">&lt;<span class="hljs-name">%</span>
+<span class="hljs-attr">require</span> "<span class="hljs-attr">TemplateCommon</span>"
+%&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-name">linker</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">%ForEachCsList(assembly_infos,</span> <span class="hljs-attr">function</span>(<span class="hljs-attr">assembly_info</span>)%&gt;</span>
+	<span class="hljs-tag">&lt;<span class="hljs-name">assembly</span> <span class="hljs-attr">fullname</span>=<span class="hljs-string">"&lt;%=assembly_info.FullName%&gt;"</span>&gt;</span>
+	    <span class="hljs-tag">&lt;<span class="hljs-name">%ForEachCsList(assembly_info.Types,</span> <span class="hljs-attr">function</span>(<span class="hljs-attr">type</span>)
+		%&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">type</span> <span class="hljs-attr">fullname</span>=<span class="hljs-string">"&lt;%=type:ToString()%&gt;"</span> <span class="hljs-attr">preserve</span>=<span class="hljs-string">"all"</span>/&gt;</span>
+		<span class="hljs-tag">&lt;<span class="hljs-name">%end)%</span>&gt;</span>
+	<span class="hljs-tag">&lt;/<span class="hljs-name">assembly</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">%end)%</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">linker</span>&gt;</span>
+</div></code></pre>
+<p>TemplateCommon有一些预定义的函数可以使用，比如ForEachCsList，可以搜索下工程的TemplateCommon.lua.txt看下有那些函数可以用，就普通的lua而已，你自己写一套也可以。</p>
+<h2 id="api">API</h2>
+<pre><code class="language-csharp"><div><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> CSObjectWrapEditor.Generator.CustomGen(<span class="hljs-keyword">string</span> template_src, GetTasks get_tasks)
+</div></code></pre>
+<ul>
+<li>template_src ： 模版的源码；</li>
+<li>get_tasks    ： 回调函数，类型是GetTasks，用来接受用户的配置，返回需要注入到模版的数据以及文件的输出流；</li>
+</ul>
+<pre><code class="language-csharp"><div><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">delegate</span> IEnumerable&lt;CustomGenTask&gt; <span class="hljs-title">GetTasks</span>(<span class="hljs-params">LuaEnv lua_env, UserConfig user_cfg</span>)</span>;
+</div></code></pre>
+<ul>
+<li>lua_env      ： LuaEnv对象，因为返回的模版数据需要放到LuaTable，需要用到LuaEnv.NewTable；</li>
+<li>user_cfg     ： 用户的配置；</li>
+<li>return       ： 返回值中，CustomGenTask代表的是一个生成文件，而IEnumerable类型表示同一个模版可以生成多个文件；</li>
+</ul>
+<pre><code class="language-csharp"><div><span class="hljs-keyword">public</span> <span class="hljs-keyword">struct</span> UserConfig
+{
+    <span class="hljs-keyword">public</span> IEnumerable&lt;Type&gt; LuaCallCSharp;
+    <span class="hljs-keyword">public</span> IEnumerable&lt;Type&gt; CSharpCallLua;
+    <span class="hljs-keyword">public</span> IEnumerable&lt;Type&gt; ReflectionUse;
+}
+</div></code></pre>
+<pre><code class="language-csharp"><div><span class="hljs-keyword">public</span> <span class="hljs-keyword">struct</span> CustomGenTask
+{
+    <span class="hljs-keyword">public</span> LuaTable Data;
+    <span class="hljs-keyword">public</span> TextWriter Output;
+}
+</div></code></pre>
+<p>示例：</p>
+<pre><code class="language-csharp"><div><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IEnumerable&lt;CustomGenTask&gt; <span class="hljs-title">GetTasks</span>(<span class="hljs-params">LuaEnv lua_env, UserConfig user_cfg</span>)</span>
+{
+    LuaTable data = lua_env.NewTable();
+    <span class="hljs-keyword">var</span> assembly_infos = (<span class="hljs-keyword">from</span> type <span class="hljs-keyword">in</span> user_cfg.ReflectionUse
+                          <span class="hljs-keyword">group</span> type <span class="hljs-keyword">by</span> type.Assembly.GetName().Name <span class="hljs-keyword">into</span> assembly_info
+                          <span class="hljs-keyword">select</span> <span class="hljs-keyword">new</span> { FullName = assembly_info.Key, Types = assembly_info.ToList()}).ToList();
+    data.Set(<span class="hljs-string">"assembly_infos"</span>, assembly_infos);
+
+    <span class="hljs-keyword">yield</span> <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> CustomGenTask
+    {
+        Data = data,
+        Output = <span class="hljs-keyword">new</span> StreamWriter(GeneratorConfig.common_path + <span class="hljs-string">"/link.xml"</span>,
+        <span class="hljs-literal">false</span>, Encoding.UTF8)
+    };
+}
+</div></code></pre>
+<ul>
+<li>这里只生成一个文件，故只返回一个CustomGenTask；</li>
+<li>data就是模版要使用的数据，这里塞了一个assembly_infos字段，这个字段如何使用可以回头看看模版部分；</li>
+</ul>
+<h2 id="%e6%a0%87%e7%ad%be">标签</h2>
+<p>一般来说你可以通过MenuItem开一个菜单来执行触发自定义生成操作，但有时你希望生成操作直接由xLua的“Generate Code”菜单触发，你就需要用到CSObjectWrapEditor.GenCodeMenu</p>
+<p>示例：</p>
+<pre><code class="language-csharp"><div>[<span class="hljs-meta">GenCodeMenu</span>]<span class="hljs-comment">//加到Generate Code菜单里头</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">GenLinkXml</span>(<span class="hljs-params"></span>)</span>
+{
+    Generator.CustomGen(ScriptableObject.CreateInstance&lt;LinkXmlGen&gt;().Template.text, GetTasks);
+}
+</div></code></pre>
+<p>ps：以上所有相关代码都在XLua\Src\Editor\LinkXmlGen目录下，也正是文章开头说的link.xml的生成功能的实现。</p>
+
+    </body>
+    </html>

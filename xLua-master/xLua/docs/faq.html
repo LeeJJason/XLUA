@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>FAQ</title>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="faq">FAQ</h1>
+<h2 id="xlua%e5%8f%91%e5%b8%83%e5%8c%85%e6%80%8e%e4%b9%88%e7%94%a8">xLua发布包怎么用？</h2>
+<p>xLua目前以zip包形式发布，在工程目录下解压即可。</p>
+<h2 id="xlua%e5%8f%af%e4%bb%a5%e6%94%be%e5%88%ab%e7%9a%84%e7%9b%ae%e5%bd%95%e5%90%97">xLua可以放别的目录吗？</h2>
+<p>可以，但生成代码目录需要配置一下（默认放Assets\XLua\Gen目录），具体可以看《XLua的配置.doc》的GenPath配置介绍。</p>
+<p>更改目录要注意的是：生成代码和xLua核心代码必须在同一程序集。如果你要用热补丁特性，xLua核心代码必须在Assembly-CSharp程序集。</p>
+<h2 id="xlua%e7%9a%84%e9%85%8d%e7%bd%ae">xLua的配置</h2>
+<p>如果你用的是lua编程，你可能需要把一些频繁访问的类配置到LuaCallCSharp，这些类的成员如果有条件编译（大多数情况下是UNITY_EDITOR）的话，你需要通过BlackList配置排除；如果你需要通过delegate回调到lua的地方，得把这些delegate配置到CSharpCallLua。</p>
+<p>如果你用的是热补丁，你需要把要注入的代码加到Hotfix列表；如果你需要通过delegate回调到lua的地方，也得把这些delegate配置到CSharpCallLua。</p>
+<p>xLua提供了强大的动态配置，让你可以结合反射实现任意的自动化配置，动态配置介绍看<a href="configure.md">这里</a>。xLua希望你能根据自身项目的需求自行配置，同时为了方便部分对反射api了解不够的童鞋，xLua也针对上面两者方式分别写了参考配置：<a href="../Editor/ExampleConfig.cs">ExampleConfig.cs</a>，直接打开相应部分的注释即可使用。</p>
+<h2 id="lua%e6%ba%90%e7%a0%81%e5%8f%aa%e8%83%bd%e4%bb%a5txt%e5%90%8e%e7%bc%80">lua源码只能以txt后缀？</h2>
+<p>什么后缀都可以。</p>
+<p>如果你想以TextAsset打包到安装包（比如放到Resources目录），Unity不认lua后缀，这是Unity的规则。</p>
+<p>如果你不打包到安装包，就没有后缀的限制：比如自行下载到某个目录（这也是热更的正确姿势），然后通过CustomLoader或者设置package.path去读这个目录。</p>
+<p>那为啥xLua本身带的lua源码（包括示例）为什么都是txt结尾呢？因为xLua本身就一个库，不含下载功能，也不方便运行时去某个地方下载代码，通过TextAsset是较简单的方式。</p>
+<h2 id="%e7%bc%96%e8%be%91%e5%99%a8%e6%88%96%e9%9d%9eil2cpp%e7%9a%84android%e4%b8%8b%e8%bf%90%e8%a1%8c%e6%ad%a3%e5%b8%b8ios%e4%b8%8b%e8%bf%90%e8%a1%8c%e8%b0%83%e7%94%a8%e6%9f%90%e5%87%bd%e6%95%b0%e6%8a%a5attempt-to-call-a-nil-value">编辑器(或非il2cpp的android)下运行正常，ios下运行调用某函数报“attempt to call a nil value”</h2>
+<p>il2cpp默认会对诸如引擎、c#系统api，第三方dll等等进行代码剪裁。简单来说就是这些地方的函数如果你C#代码没访问到的就不编译到你最终发布包。</p>
+<p>解决办法：增加引用（比如配置到LuaCallCSharp，或者你自己C#代码增加那函数的访问），或者通过link.xml配置（当配置了ReflectionUse后，xlua会自动帮你配置到link.xml）告诉il2cpp别剪裁某类型。</p>
+<h2 id="unity-2018%e5%85%bc%e5%ae%b9%e6%80%a7%e9%97%ae%e9%a2%98%e8%a7%a3%e5%86%b3">Unity 2018兼容性问题解决</h2>
+<p>2.1.14前的版本都建议先升级到2.1.14，升级后，还有如下两个使用注意事项：</p>
+<p>1、默认配置不生成代码运行会报错</p>
+<p>这是因为Api Compatibility <a href="http://xn--Level-iq1h5250apuua.NET">Level设置为.NET</a> Standard 2.0，<a href="http://xn--6w0a.NET">而.NET</a> Standard 2.0不支持emit导致的。</p>
+<p>解决方案：平时开发Api Compatibility <a href="http://xn--Level-iq1h5250apuua.NET">Level设置为.NET</a> 4.x，就能支持编辑器不生成代码开发。发布手机版本时，按Unity官方的建议，<a href="http://xn--siqx2lp46b36o.NET">可配置为.NET</a> Standard 2.0，包会更小些。</p>
+<p>2、生成代码后，一些系统类型的生成代码会报一些方法不存在。</p>
+<p>据研究表明，Unity <a href="http://xn--2018-ew6k632d.NET">2018设置.NET</a> 4.X Equivalent的话，其运行和编译用的库不一致，前者比后者多一些API。</p>
+<p>运行用的是：unity安装目录\Editor\Data\MonoBleedingEdge\lib\mono\unityjit\mscorlib.dll</p>
+<p>编译链接的是：unity安装目录\Editor\Data\MonoBleedingEdge\lib\mono\4.7.1-api\mscorlib.dll</p>
+<p>解决办法：用黑名单排除报错方法即可。不过2019年8月6号以前的版本的黑名单配置对泛型不友好，要一个个泛型实例的配置（比如，Dictionary&lt;int, int&gt;和Dictionary&lt;float, int&gt;要分别配置），而目前发现该问题主要出在泛型Dictionary上。可以更新到2019年8月6号之后的版本，该版本支持配置一个过滤器对泛型方法过滤。这里有对unity 2018的Dictionary的<a href="https://github.com/Tencent/xLua/blob/master/Assets/XLua/Editor/ExampleConfig.cs#L277">针对性配置</a>，直接拷贝使用，如果碰到其它泛型也有多出来的方法，参考Dictionary进行配置。</p>
+<h2 id="plugins%e6%ba%90%e7%a0%81%e5%9c%a8%e5%93%aa%e9%87%8c%e5%8f%af%e4%bb%a5%e6%89%be%e5%88%b0%e6%80%8e%e4%b9%88%e4%bd%bf%e7%94%a8">Plugins源码在哪里可以找到，怎么使用？</h2>
+<p>Plugins源码位于xLua_Project_Root/build下。</p>
+<p>源码编译依赖cmake，安装cmake后执行make_xxxx_yyyy.zz即可，xxxx代表平台，比如ios，android等，yyyy是要集成的虚拟机，有lua53和luajit两者，zz是后缀，windows下是bat，其它平台是sh。</p>
+<p>windows编译依赖Visual Studio 2015。</p>
+<p>android编译在linux下执行，依赖NDK，并且需要把脚本中ANDROID_NDK指向NDK的安装目录。</p>
+<p>ios和osx需要在mac下编译。</p>
+<h2 id="%e6%8a%a5%e7%b1%bb%e4%bc%bcxluaaccess-no-field-hitfix0update%e7%9a%84%e9%94%99%e8%af%af%e6%80%8e%e4%b9%88%e8%a7%a3%e5%86%b3">报类似“xlua.access, no field __Hitfix0_Update”的错误怎么解决？</h2>
+<p>按<a href="hotfix.md">Hotfix操作指南</a>一步步操作。</p>
+<h2 id="visual-studio-2017%e4%b8%8b%e7%bc%96%e8%af%91uwp%e5%8e%9f%e7%94%9f%e5%ba%93">visual studio 2017下编译UWP原生库</h2>
+<p>visual studio 2017需要安装：1、“工作负载”下的“通用Window平台开发”；2、“单个组件”下的“用于ARM的Visual C++编译器和库”、“用于ARM64的Visual C++编译器和库”、“是用于ARM64的C++通用Windows平台工具”</p>
+<h2 id="visual-studio-2015%e4%b8%8b%e7%bc%96%e8%af%91%e5%8e%9f%e7%94%9f%e5%ba%93">visual studio 2015下编译原生库</h2>
+<p>把build\vs2015下的bat文件拷贝到build目录，覆盖同名文件</p>
+<h2 id="%e6%8a%a5please-install-the-tools">报“please install the Tools”</h2>
+<p>没有把Tools安装到Assets平级目录，安装包，或者master下都能找到这个目录。</p>
+<h2 id="%e6%8a%a5this-delegateinterface-must-add-to-csharpcalllua--xxx%e5%bc%82%e5%b8%b8%e6%80%8e%e4%b9%88%e8%a7%a3%e5%86%b3">报“This delegate/interface must add to CSharpCallLua : XXX”异常怎么解决？</h2>
+<p>在编辑器下xLua不生成代码都可以运行，出现这种提示，要么是该类型没加CSharpCallLua，要么是加之前生成过代码，没重新执行生成。</p>
+<p>解决办法，确认XXX（类型名）加上CSharpCallLua后，清除代码后运行。</p>
+<p>如果编辑器下没问题，发布到手机报这错，表示你发布前没生成代码（执行“XLua/Generate Code”）。</p>
+<h2 id="unity55%e4%bb%a5%e4%b8%8a%e6%89%a7%e8%a1%8c%22xluahotfix-inject-in-editor%22%e8%8f%9c%e5%8d%95%e4%bc%9a%e6%8f%90%e7%a4%ba%22warning-the-runtime-version-supported-by-this-application-is-unavailable%22">unity5.5以上执行&quot;XLua/Hotfix Inject In Editor&quot;菜单会提示&quot;WARNING: The runtime version supported by this application is unavailable.&quot;</h2>
+<p>这是因为注入工具是用.net3.5编译，而unity5.5意思MonoBleedingEdge的mono环境并没3.5支持导致的，不过一般而言都向下兼容，目前为止也没发现该warning带来什么问题。</p>
+<p>可能有人发现定义INJECT_WITHOUT_TOOL用内嵌模式会没有该warning，但问题是这模式是调试问题用的，不建议使用，因为可能会有一些库冲突问题。</p>
+<h2 id="hotfix%e4%b8%8b%e6%80%8e%e4%b9%88%e8%a7%a6%e5%8f%91%e4%b8%80%e4%b8%aaevent">hotfix下怎么触发一个event</h2>
+<p>首先通过xlua.private_accessible开启私有成员访问。</p>
+<p>跟着通过对象的&quot;&amp;事件名&quot;字段调用delegate，例如self['&amp;MyEvent']()，其中MyEvent是事件名。</p>
+<h2 id="%e6%80%8e%e4%b9%88%e5%af%b9unity-coroutine%e7%9a%84%e5%ae%9e%e7%8e%b0%e5%87%bd%e6%95%b0%e6%89%93%e8%a1%a5%e4%b8%81">怎么对Unity Coroutine的实现函数打补丁？</h2>
+<p>见<a href="hotfix.md">Hotfix操作指南</a>相应章节。</p>
+<h2 id="%e6%94%af%e6%8c%81ngui%e6%88%96%e8%80%85uguidotween%e7%ad%89%e7%ad%89%e4%b9%88">支持NGUI（或者UGUI/DOTween等等）么？</h2>
+<p>支持，xLua最主要的特性是让你原来用C#写的地方可以换成用lua写，你C#能用的插件，基本都能用。</p>
+<h2 id="%e5%a6%82%e6%9e%9c%e9%9c%80%e8%a6%81%e8%b0%83%e8%af%95customloader%e7%9a%84filepath%e5%8f%82%e6%95%b0%e8%af%a5%e5%a6%82%e4%bd%95%e5%a4%84%e7%90%86">如果需要调试，CustomLoader的filepath参数该如何处理？</h2>
+<p>lua里头调用require 'a.b'时，CustomLoader会被调用，并传入字符串&quot;a.b&quot;，你需要理解这字符串，（从文件/内存/网络等）加载好lua文件，返回两个东西，第一个是调试器可以理解的路径，比如：a/b.lua，这个通过设置ref类型的filepath参数返回，第二个是UTF8格式的源码的字节流（byte[]），通过返回值返回。</p>
+<h2 id="%e4%bb%80%e4%b9%88%e6%98%af%e7%94%9f%e6%88%90%e4%bb%a3%e7%a0%81">什么是生成代码？</h2>
+<p>xLua支持的lua和C#间交互技术之一，这种技术通过生成两者间的适配代码来实现交互，性能较好，是推荐的方式。</p>
+<p>另一种交互技术是反射，这种方式对安装包的影响更少，可以在性能要求不高或者对安装包大小很敏感的场景下使用。</p>
+<h2 id="%e6%94%b9%e4%ba%86%e6%8e%a5%e5%8f%a3%e5%90%8e%e4%b9%8b%e5%89%8d%e7%94%9f%e6%88%90%e7%9a%84%e4%bb%a3%e7%a0%81%e5%87%ba%e7%8e%b0%e9%94%99%e8%af%af%e6%80%8e%e4%b9%88%e5%8a%9e">改了接口后，之前生成的代码出现错误怎么办？</h2>
+<p>清除掉生成代码（执行“Clear Generated Code”菜单，如果你重启过，会找不到这个菜单，这时你可以手动删除整个生成代码目录），等编译完成后重新生成。</p>
+<h2 id="%e5%ba%94%e8%af%a5%e4%bb%80%e4%b9%88%e6%97%b6%e5%80%99%e7%94%9f%e6%88%90%e4%bb%a3%e7%a0%81">应该什么时候生成代码？</h2>
+<p>开发期不建议生成代码，可以避免很多由于不一致导致的编译失败，以及生成代码本身的编译等待。</p>
+<p>build手机版本前必须执行生成代码，建议做成自动化的。</p>
+<p>做性能调优，性能测试前必须执行生成代码，因为生成和不生成性能的区别还是很大的。</p>
+<h2 id="cs%e5%90%8d%e5%ad%97%e7%a9%ba%e9%97%b4%e4%b8%8b%e6%9c%89%e6%89%80%e6%9c%89c-api%e6%98%af%e4%b8%8d%e6%98%af%e5%be%88%e5%8d%a0%e5%86%85%e5%ad%98">CS名字空间下有所有C# API是不是很占内存？</h2>
+<p>由于用了lazyload，这个“有”只是个虚拟的概念，比如UnityEngine.GameObject，是访问第一次CS.UnityEngine.GameObject或者第一个实例往lua传送才加载该类型方法，属性等。</p>
+<h2 id="luacallsharp%e4%bb%a5%e5%8f%8acsharpcalllua%e4%b8%a4%e7%a7%8d%e7%94%9f%e6%88%90%e5%90%84%e5%9c%a8%e4%bb%80%e4%b9%88%e5%9c%ba%e6%99%af%e4%b8%8b%e7%94%a8">LuaCallSharp以及CSharpCallLua两种生成各在什么场景下用？</h2>
+<p>看调用者和被调用者，比如要在lua调用C#的GameObject.Find函数，或者调用gameobject的实例方法，属性等，GameObject类要加LuaCallSharp，而想把一个lua函数挂到UI回调，这是调用者是C#，被调用的是一个lua函数，所以回调声明的delegate要加CSharpCallLua。</p>
+<p>有时会比较迷惑人，比如List<int>.Find(Predicate<int> match)的调用，List<int>当然是加LuaCallSharp，而Predicate<int>却要加CSharpCallLua，因为match的调用者在C#，被调用的是一个lua函数。</p>
+<p>更无脑一点的方式是看到“This delegate/interface must add to CSharpCallLua : XXX”，就把XXX加到CSharpCallLua即可。</p>
+<h2 id="%e5%80%bc%e7%b1%bb%e5%9e%8b%e4%bc%a0%e9%80%92%e4%bc%9a%e6%9c%89gc-alloc%e4%b9%88">值类型传递会有gc alloc么？</h2>
+<p>如果你使用的是delegate调用lua函数，或者用LuaTable、LuaFunction的无gc接口，或者数组的话，以下值类型都是没gc的：</p>
+<p>1、所有的基本值类型（所有整数，所有浮点数，decimal）；</p>
+<p>2、所有的枚举类型；</p>
+<p>3、字段只包含值类型的struct，可嵌套其它只包含值类型struct；</p>
+<p>其中2、3需要把该类型加到GCOptimize。</p>
+<h2 id="%e5%8f%8d%e5%b0%84%e5%9c%a8ios%e4%b8%8b%e5%8f%af%e7%94%a8%e5%90%97">反射在ios下可用吗？</h2>
+<p>ios下的限制有两个：1、没有jit；2、代码剪裁（stripping）；</p>
+<p>对于C#通过delegate或者interface调用lua，如果不生成代码是用反射的emit，这依赖jit，所以这目前只在编辑器可用。</p>
+<p>对于lua调用C#，主要会被代码剪裁影响，这时你可以配置ReflectionUse（不要配LuaCallSharp），执行“Generate Code”，这时不会对该类生成封装代码，而是生成link.xml把该类配置为不剪裁。</p>
+<p>简而言之，除了CSharpCallLua是必须的（这类生成代码往往不多），LuaCallSharp生成都可以改为用反射。</p>
+<h2 id="%e6%94%af%e6%8c%81%e6%b3%9b%e5%9e%8b%e6%96%b9%e6%b3%95%e7%9a%84%e8%b0%83%e7%94%a8%e4%b9%88">支持泛型方法的调用么？</h2>
+<p>1、泛型约束到某个基类的支持，看例子：(../Examples/09_GenericMethod/)</p>
+<p>2、没有泛型约束的建议封装为非泛型使用
+如果是静态方法，可以自己写个封装来实例化泛型方法。</p>
+<p>如果是成员方法，xLua支持扩展方法，你可以添加一个扩展方法来实例化泛型方法。该扩展方法使用起来就和普通成员方法一样。</p>
+<pre><code class="language-csharp"><div><span class="hljs-comment">// C#</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Button <span class="hljs-title">GetButton</span>(<span class="hljs-params"><span class="hljs-keyword">this</span> GameObject go</span>)</span>
+{
+    <span class="hljs-keyword">return</span> go.GetComponent&lt;Button&gt;();
+}
+</div></code></pre>
+<pre><code class="language-lua"><div><span class="hljs-comment">-- lua</span>
+<span class="hljs-keyword">local</span> go = CS.UnityEngine.GameObject.Find(<span class="hljs-string">"button"</span>)
+go:GetButton().onClick:AddListener(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">'onClick'</span>)
+<span class="hljs-keyword">end</span>)
+</div></code></pre>
+<p>3、如果xlua版本大于2.1.12的话，新增反射调用泛型方法的支持（有一定的限制，看后面的说明），比如对于这么个C#类型：</p>
+<pre><code class="language-csharp"><div><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">GetGenericMethodTest</span>
+{
+    <span class="hljs-keyword">int</span> a = <span class="hljs-number">100</span>;
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> Foo&lt;T1, T2&gt;(T1 p1, T2 p2)
+    {
+        Debug.Log(<span class="hljs-keyword">typeof</span>(T1));
+        Debug.Log(<span class="hljs-keyword">typeof</span>(T2));
+        Debug.Log(p1);
+        Debug.Log(p2);
+        <span class="hljs-keyword">return</span> a;
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> Bar&lt;T1, T2&gt;(T1 p1, T2 p2)
+    {
+        Debug.Log(<span class="hljs-keyword">typeof</span>(T1));
+        Debug.Log(<span class="hljs-keyword">typeof</span>(T2));
+        Debug.Log(p1);
+        Debug.Log(p2);
+    }
+}
+</div></code></pre>
+<p>在lua那这么调用：</p>
+<pre><code class="language-lua"><div><span class="hljs-keyword">local</span> foo_generic = xlua.get_generic_method(CS.GetGenericMethodTest, <span class="hljs-string">'Foo'</span>)
+<span class="hljs-keyword">local</span> bar_generic = xlua.get_generic_method(CS.GetGenericMethodTest, <span class="hljs-string">'Bar'</span>)
+
+<span class="hljs-keyword">local</span> foo = foo_generic(CS.System.Int32, CS.System.Double)
+<span class="hljs-keyword">local</span> bar = bar_generic(CS.System.Double, CS.UnityEngine.GameObject)
+
+<span class="hljs-comment">-- call instance method</span>
+<span class="hljs-keyword">local</span> o = CS.GetGenericMethodTest()
+<span class="hljs-keyword">local</span> ret = foo(o, <span class="hljs-number">1</span>, <span class="hljs-number">2</span>)
+<span class="hljs-built_in">print</span>(ret)
+
+<span class="hljs-comment">-- call static method</span>
+bar(<span class="hljs-number">2</span>, <span class="hljs-literal">nil</span>)
+</div></code></pre>
+<p>使用限制，只有下面几种情况可以：</p>
+<ul>
+<li>mono下可以</li>
+<li>il2cpp下，如果泛型参数是引用类型可以</li>
+<li>il2cpp下，如果泛型参数是值类型，C#那有用同样的泛型参数调用过（如果是hotfix场景下，一般在C#那会用同样的泛型参数调用过，所以在hotfix功能下一般都可用）</li>
+</ul>
+<h2 id="%e6%94%af%e6%8c%81lua%e8%b0%83%e7%94%a8c%e9%87%8d%e8%bd%bd%e5%87%bd%e6%95%b0%e5%90%97">支持lua调用C#重载函数吗？</h2>
+<p>支持，但没有C#端支持的那么完善，比如重载方法void Foo(int a)和void Foo(short a)，由于int和short都对应lua的number，是没法根据参数判断调用的是哪个重载。这时你可以借助扩展方法来为其中一个起一个别名。</p>
+<h2 id="%e7%bc%96%e8%be%91%e5%99%a8%e4%b8%8b%e8%bf%90%e8%a1%8c%e6%ad%a3%e5%b8%b8%e6%89%93%e5%8c%85%e7%9a%84%e6%97%b6%e5%80%99%e7%94%9f%e6%88%90%e4%bb%a3%e7%a0%81%e6%8a%a5%e6%b2%a1%e6%9c%89%e6%9f%90%e6%96%b9%e6%b3%95%e5%b1%9e%e6%80%a7%e5%ad%97%e6%ae%b5%e5%ae%9a%e4%b9%89%e6%80%8e%e4%b9%88%e5%8a%9e">编辑器下运行正常，打包的时候生成代码报“没有某方法/属性/字段定义”怎么办？</h2>
+<p>往往是由于该方法/属性/字段是扩在条件编译里头，只在UNITY_EDITOR下有效，这是可以通过把这方法/属性/字段加到黑名单来解决，加了之后要等编译完成后重新执行代码生成。</p>
+<h2 id="thisstring-field%e6%88%96%e8%80%85thisobject-field%e6%93%8d%e4%bd%9c%e7%ac%a6%e9%87%8d%e8%bd%bd%e4%b8%ba%e4%bb%80%e4%b9%88%e5%9c%a8lua%e6%97%a0%e6%b3%95%e8%ae%bf%e9%97%ae%e6%af%94%e5%a6%82dictionarystring-xxx-dictionaryobject-xxx%e5%9c%a8lua%e4%b8%ad%e6%97%a0%e6%b3%95%e9%80%9a%e8%bf%87dicabc%e6%88%96%e8%80%85dicabc%e6%a3%80%e7%b4%a2%e5%80%bc">this[string field]或者this[object field]操作符重载为什么在lua无法访问？（比如Dictionary&lt;string, xxx&gt;, Dictionary&lt;object, xxx&gt;在lua中无法通过dic['abc']或者dic.abc检索值）</h2>
+<p>因为：1、这个特性会导致基类定义的方法、属性、字段等无法访问（比如Animation无法访问到GetComponent方法）；2、key为当前类某方法、属性、字段的名字的数据无法检索，比如Dictionary类型，dic['TryGetValue']返回的是一个函数，指向Dictionary的TryGetValue方法。</p>
+<p>如果你的版本大于2.1.11，可以用get_Item来获取值，用set_Item来设置值。要注意只有this[string field]或者this[object field]才有这两个替代api，其它类型的key是没有的。</p>
+<pre><code class="language-lua"><div>dic:set_Item(<span class="hljs-string">'a'</span>, <span class="hljs-number">1</span>)
+dic:set_Item(<span class="hljs-string">'b'</span>, <span class="hljs-number">2</span>)
+<span class="hljs-built_in">print</span>(dic:get_Item(<span class="hljs-string">'a'</span>))
+<span class="hljs-built_in">print</span>(dic:get_Item(<span class="hljs-string">'b'</span>))
+</div></code></pre>
+<p>如果你的版本小于或等于2.1.11，建议直接方法该操作符的等效方法，比如Dictionary的TryGetValue，如果该方法没有提供，可以在C#那通过Extension method封装一个使用。</p>
+<h2 id="%e6%9c%89%e7%9a%84unity%e5%af%b9%e8%b1%a1%e5%9c%a8c%e4%b8%banull%e5%9c%a8lua%e4%b8%ba%e5%95%a5%e4%b8%8d%e4%b8%banil%e5%91%a2%e6%af%94%e5%a6%82%e4%b8%80%e4%b8%aa%e5%b7%b2%e7%bb%8fdestroy%e7%9a%84gameobject">有的Unity对象，在C#为null，在lua为啥不为nil呢？比如一个已经Destroy的GameObject</h2>
+<p>其实那C#对象并不为null，是UnityEngine.Object重载的==操作符，当一个对象被Destroy，未初始化等情况，obj == null返回true，但这C#对象并不为null，可以通过System.Object.ReferenceEquals(null, obj)来验证下。</p>
+<p>对应这种情况，可以为UnityEngine.Object写一个扩展方法：</p>
+<pre><code class="language-csharp"><div>[<span class="hljs-meta">LuaCallCSharp</span>]
+[<span class="hljs-meta">ReflectionUse</span>]
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title">UnityEngineObjectExtention</span>
+{
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">bool</span> <span class="hljs-title">IsNull</span>(<span class="hljs-params"><span class="hljs-keyword">this</span> UnityEngine.Object o</span>) <span class="hljs-comment">// 或者名字叫IsDestroyed等等</span></span>
+    {
+        <span class="hljs-keyword">return</span> o == <span class="hljs-literal">null</span>;
+    }
+}
+</div></code></pre>
+<p>然后在lua那你对所有UnityEngine.Object实例都使用IsNull判断</p>
+<pre><code class="language-lua"><div><span class="hljs-built_in">print</span>(go:GetComponent(<span class="hljs-string">'Animator'</span>):IsNull())
+</div></code></pre>
+<h2 id="%e6%b3%9b%e5%9e%8b%e5%ae%9e%e4%be%8b%e6%80%8e%e4%b9%88%e6%9e%84%e9%80%a0">泛型实例怎么构造</h2>
+<p>涉及的类型都在mscorlib，Assembly-CSharp程序集的话，泛型实例的构造和普通类型是一样的，都是CS.namespace.typename()，可能比较特殊的是typename的表达，泛型实例的typename的表达包含了标识符非法符号，最后一部分要换成[&quot;typename&quot;]，以List<string>为例</p>
+<pre><code class="language-lua"><div><span class="hljs-keyword">local</span> lst = CS.System.Collections.Generic[<span class="hljs-string">"List`1[System.String]"</span>]()
+</div></code></pre>
+<p>如果某个泛型实例的typename不确定，可以在C#测打印下typeof(不确定的类型).ToString()</p>
+<p>如果涉及mscorlib，Assembly-CSharp程序集之外的类型的话，可以用C#的反射来做：</p>
+<pre><code class="language-lua"><div><span class="hljs-keyword">local</span> dic = CS.System.Activator.CreateInstance(CS.System.Type.GetType(<span class="hljs-string">'System.Collections.Generic.Dictionary`2[[System.String, mscorlib],[UnityEngine.Vector3, UnityEngine]],mscorlib'</span>))
+dic:Add(<span class="hljs-string">'a'</span>, CS.UnityEngine.Vector3(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>))
+<span class="hljs-built_in">print</span>(dic:TryGetValue(<span class="hljs-string">'a'</span>))
+</div></code></pre>
+<p>如果你的xLua版本大于v2.1.12，将会有更漂亮的表达方式</p>
+<pre><code class="language-lua"><div><span class="hljs-comment">-- local List_String = CS.System.Collections.Generic['List&lt;&gt;'](CS.System.String) -- another way</span>
+<span class="hljs-keyword">local</span> List_String = CS.System.Collections.Generic.List(CS.System.String)
+<span class="hljs-keyword">local</span> lst = List_String()
+
+<span class="hljs-keyword">local</span> Dictionary_String_Vector3 = CS.System.Collections.Generic.Dictionary(CS.System.String, CS.UnityEngine.Vector3)
+<span class="hljs-keyword">local</span> dic = Dictionary_String_Vector3()
+dic:Add(<span class="hljs-string">'a'</span>, CS.UnityEngine.Vector3(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>))
+<span class="hljs-built_in">print</span>(dic:TryGetValue(<span class="hljs-string">'a'</span>))
+</div></code></pre>
+<h2 id="%e8%b0%83%e7%94%a8luaenvdispose%e6%97%b6%e6%8a%a5try-to-dispose-a-luaenv-with-c-callback%e9%94%99%e6%98%af%e4%bb%80%e4%b9%88%e5%8e%9f%e5%9b%a0">调用LuaEnv.Dispose时，报“try to dispose a LuaEnv with C# callback!”错是什么原因？</h2>
+<p>这是由于C#还存在指向lua虚拟机里头某个函数的delegate，为了防止业务在虚拟机释放后调用这些无效（因为其引用的lua函数所在虚拟机都释放了）delegate导致的异常甚至崩溃，做了这个检查。</p>
+<p>怎么解决？释放这些delegate即可，所谓释放，在C#中，就是没有引用：</p>
+<p>你是在C#通过LuaTable.Get获取并保存到对象成员，赋值该成员为null；</p>
+<p>你是在lua那把lua函数注册到一些事件事件回调，反注册这些回调；</p>
+<p>如果你是通过xlua.hotfix(class, method, func)注入到C#，则通过xlua.hotfix(class, method, nil)删除；</p>
+<p>要注意以上操作在Dispose之前完成。</p>
+<p>xlua提供了一个工具函数来帮助你找到被C#引用着的lua函数，util.print_func_ref_by_csharp，使用很简单，执行如下lua代码：</p>
+<pre><code class="language-lua"><div><span class="hljs-keyword">local</span> util = <span class="hljs-built_in">require</span> <span class="hljs-string">'xlua.util'</span>
+util.print_func_ref_by_csharp()
+</div></code></pre>
+<p>可以看到控制台有类似这样的输出，下面第一行表示有一个在main.lua的第2行定义的函数被C#引用着</p>
+<pre><code class="language-bash"><div>LUA: main.lua:2
+LUA: main.lua:13
+</div></code></pre>
+<h2 id="%e8%b0%83%e7%94%a8luaenvdispose%e5%b4%a9%e6%ba%83">调用LuaEnv.Dispose崩溃</h2>
+<p>很可能是这个Dispose操作是由lua那驱动执行，相当于在lua执行的过程中把lua虚拟机给释放了，改为只由C#执行即可。</p>
+<h2 id="c%e5%8f%82%e6%95%b0%e6%88%96%e5%ad%97%e6%ae%b5%e7%b1%bb%e5%9e%8b%e6%98%afobject%e6%97%b6%e4%bc%a0%e9%80%92%e6%95%b4%e6%95%b0%e9%bb%98%e8%ae%a4%e6%98%af%e4%bb%a5long%e7%b1%bb%e5%9e%8b%e4%bc%a0%e9%80%92%e5%a6%82%e4%bd%95%e6%8c%87%e6%98%8e%e5%85%b6%e5%ae%83%e7%b1%bb%e5%9e%8b%e6%af%94%e5%a6%82int">C#参数（或字段）类型是object时，传递整数默认是以long类型传递，如何指明其它类型？比如int</h2>
+<p>看<a href="../Examples/11_RawObject/RawObjectTest.cs">例子11</a></p>
+<h2 id="%e5%a6%82%e4%bd%95%e5%81%9a%e5%88%b0%e5%85%88%e6%89%a7%e8%a1%8c%e5%8e%9f%e6%9d%a5%e7%9a%84c%e9%80%bb%e8%be%91%e7%84%b6%e5%90%8e%e5%86%8d%e6%89%a7%e8%a1%8c%e8%a1%a5%e4%b8%81">如何做到先执行原来的C#逻辑，然后再执行补丁</h2>
+<p>用util.hotfix_ex，可以调用原先的C#逻辑</p>
+<pre><code class="language-lua"><div><span class="hljs-keyword">local</span> util = <span class="hljs-built_in">require</span> <span class="hljs-string">'xlua.util'</span>
+util.hotfix_ex(CS.HotfixTest, <span class="hljs-string">'Add'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, a, b)</span></span>
+   <span class="hljs-keyword">local</span> org_sum = self:Add(a, b)
+   <span class="hljs-built_in">print</span>(<span class="hljs-string">'org_sum'</span>, org_sum)
+   <span class="hljs-keyword">return</span> a + b
+<span class="hljs-keyword">end</span>)
+</div></code></pre>
+<h2 id="%e6%80%8e%e4%b9%88%e6%8a%8ac%e7%9a%84%e5%87%bd%e6%95%b0%e8%b5%8b%e5%80%bc%e7%bb%99%e4%b8%80%e4%b8%aa%e5%a7%94%e6%89%98%e5%ad%97%e6%ae%b5">怎么把C#的函数赋值给一个委托字段</h2>
+<p>2.1.8及之前版本，你把C#函数当成一个lua函数即可，性能会略低，因为委托调用时先通过Birdage适配代码调用lua，然后lua再调用回C#。</p>
+<p>2.1.9 xlua.util新增createdelegate函数</p>
+<p>比如如下C#代码</p>
+<pre><code class="language-csharp"><div><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">TestClass</span>
+{
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Foo</span>(<span class="hljs-params"><span class="hljs-keyword">int</span> a</span>)</span>
+    { 
+    }
+	
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">SFoo</span>(<span class="hljs-params"><span class="hljs-keyword">int</span> a</span>)</span>
+    {
+    }
+｝
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">delegate</span> <span class="hljs-keyword">void</span> <span class="hljs-title">TestDelegate</span>(<span class="hljs-params"><span class="hljs-keyword">int</span> a</span>)</span>;
+</div></code></pre>
+<p>你可以指明用Foo函数创建一个TestDelegate实例</p>
+<pre><code class="language-lua"><div><span class="hljs-keyword">local</span> util = <span class="hljs-built_in">require</span> <span class="hljs-string">'xlua.util'</span>
+
+<span class="hljs-keyword">local</span> d1 = util.createdelegate(CS.TestDelegate, obj, CS.TestClass, <span class="hljs-string">'Foo'</span>, {typeof(CS.System.Int32)}) <span class="hljs-comment">--由于Foo是实例方法，所以参数2需要传TestClass实例</span>
+<span class="hljs-keyword">local</span> d2 = util.createdelegate(CS.TestDelegate, <span class="hljs-literal">nil</span>, CS.TestClass, <span class="hljs-string">'SFoo'</span>, {typeof(CS.System.Int32)})
+
+obj_has_TestDelegate.field = d1 + d2 <span class="hljs-comment">--到时调用field的时候将会触发Foo和SFoo，这不会经过Lua适配</span>
+
+</div></code></pre>
+<h2 id="%e4%b8%ba%e4%bb%80%e4%b9%88%e6%9c%89%e6%97%b6lua%e9%94%99%e8%af%af%e7%9b%b4%e6%8e%a5%e4%b8%ad%e6%96%ad%e4%ba%86%e8%80%8c%e6%b2%a1%e9%94%99%e8%af%af%e4%bf%a1%e6%81%af">为什么有时Lua错误直接中断了而没错误信息？</h2>
+<p>一般两种情况：</p>
+<p>1、你的错误代码用协程跑，而标准的lua，协程出错是通过resume返回值来表示，可以查阅相关的lua官方文档。如果你希望协程出错直接抛异常，可以在你的resume调用那加个assert。</p>
+<p>把类似下面的代码：</p>
+<pre><code class="language-lua"><div>coroutine.<span class="hljs-built_in">resume</span>(co, ...)
+</div></code></pre>
+<p>改为：</p>
+<pre><code class="language-lua"><div><span class="hljs-built_in">assert</span>(coroutine.<span class="hljs-built_in">resume</span>(co, ...))
+</div></code></pre>
+<p>2、上层catch后，不打印</p>
+<p>比如某些sdk，在回调业务时，try-catch后把异常吃了。</p>
+<h2 id="%e9%87%8d%e8%bd%bd%e5%90%ab%e7%b3%8a%e5%a6%82%e4%bd%95%e5%a4%84%e7%90%86">重载含糊如何处理</h2>
+<p>比如由于忽略out参数导致的Physics.Raycast其中一个重载调用不了，比如short，int无法区分的问题。</p>
+<p>首先out参数导致重载含糊比较少见，目前只反馈（截至2017-9-22）过Physics.Raycast一个，建议通过自行封装来解决（short，int这种情况也适用）：静态函数的直接封装个另外名字的，如果是成员方法则通过Extension method来封装。</p>
+<p>如果是hotfix场景，我们之前并没有提前封装，又希望调用指定重载怎么办？</p>
+<p>可以通过xlua.tofunction结合反射来处理，xlua.tofunction输入一个MethodBase对象，返回一个lua函数。比如下面的C#代码：</p>
+<pre><code class="language-csharp"><div><span class="hljs-keyword">class</span> <span class="hljs-title">TestOverload</span>
+{
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">Add</span>(<span class="hljs-params"><span class="hljs-keyword">int</span> a, <span class="hljs-keyword">int</span> b</span>)</span>
+    {
+        Debug.Log(<span class="hljs-string">"int version"</span>);
+        <span class="hljs-keyword">return</span> a + b;
+    }
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">short</span> <span class="hljs-title">Add</span>(<span class="hljs-params"><span class="hljs-keyword">short</span> a, <span class="hljs-keyword">short</span> b</span>)</span>
+    {
+        Debug.Log(<span class="hljs-string">"short version"</span>);
+        <span class="hljs-keyword">return</span> (<span class="hljs-keyword">short</span>)(a + b);
+    }
+}
+</div></code></pre>
+<p>我们可以这么调用指定重载：</p>
+<pre><code class="language-lua"><div><span class="hljs-keyword">local</span> m1 = typeof(CS.TestOverload):GetMethod(<span class="hljs-string">'Add'</span>, {typeof(CS.System.Int16), typeof(CS.System.Int16)})
+<span class="hljs-keyword">local</span> m2 = typeof(CS.TestOverload):GetMethod(<span class="hljs-string">'Add'</span>, {typeof(CS.System.Int32), typeof(CS.System.Int32)})
+<span class="hljs-keyword">local</span> f1 = xlua.tofunction(m1) <span class="hljs-comment">--切记对于同一个MethodBase，只tofunction一次，然后重复使用</span>
+<span class="hljs-keyword">local</span> f2 = xlua.tofunction(m2)
+
+<span class="hljs-keyword">local</span> obj = CS.TestOverload()
+
+f1(obj, <span class="hljs-number">1</span>, <span class="hljs-number">2</span>) <span class="hljs-comment">--调用short版本，成员方法，所以要传对象，静态方法则不需要</span>
+f2(obj, <span class="hljs-number">1</span>, <span class="hljs-number">2</span>) <span class="hljs-comment">--调用int版本</span>
+</div></code></pre>
+<p>注意：xlua.tofunction由于使用不太方便，以及使用了反射，所以建议做作为临时方案，尽量用封装的方法来解决。</p>
+<h2 id="%e6%94%af%e6%8c%81interface%e6%89%a9%e5%b1%95%e6%96%b9%e6%b3%95%e4%b9%88">支持interface扩展方法么？</h2>
+<p>考虑到生成代码量，不支持通过obj:ExtentionMethod()的方式去调用，支持通过静态方法的方式去调用CS.ExtentionClass.ExtentionMethod(obj)</p>
+<h2 id="%e5%a6%82%e4%bd%95%e6%8a%8axlua%e7%9a%84wrap%e7%94%9f%e6%88%90%e6%93%8d%e4%bd%9c%e9%9b%86%e6%88%90%e5%88%b0%e6%88%91%e9%a1%b9%e7%9b%ae%e7%9a%84%e8%87%aa%e5%8a%a8%e6%89%93%e5%8c%85%e6%b5%81%e7%a8%8b%e4%b8%ad">如何把xLua的Wrap生成操作集成到我项目的自动打包流程中？</h2>
+<p>可以参考<a href="../Examples/13_BuildFromCLI/">例子13</a>，通过命令行调用Unity自定义类方法出包。</p>
+<h2 id="%e4%bd%bf%e7%94%a8%e7%83%ad%e8%a1%a5%e4%b8%81%e7%89%b9%e6%80%a7%e6%89%93%e6%89%8b%e6%9c%ba%e7%89%88%e6%9c%ac%e6%97%b6%e6%8a%a5delegatesgensbridgecs%e5%bc%95%e7%94%a8%e4%ba%86%e4%b8%8d%e5%ad%98%e5%9c%a8%e7%9a%84%e7%b1%bb%e6%af%94%e5%a6%82%e4%bb%85%e7%bc%96%e8%be%91%e5%99%a8%e4%bd%bf%e7%94%a8%e7%9a%84%e7%b1%bb%e5%9e%8b%e5%ba%94%e8%af%a5%e5%a6%82%e4%bd%95%e5%a4%84%e7%90%86">使用热补丁特性，打手机版本时报DelegatesGensBridge.cs引用了不存在的类（比如仅编辑器使用的类型），应该如何处理？</h2>
+<p>这是因为Hotfix列表里头配置的类型（假设是类型A），对这些不存在的类型（假设是类型B）引用。找到这种类型，从Hotfix配置列表中排除（注意，排除的类型A，而不是类型B）。</p>
+<p>如何找？VS中选中报不存在的类型，然后“Find All References”找到引用了这个类型的所有方法、属性。。这些方法、属性等等所在的类型就是你要排除的类型。</p>
+<h2 id="%e5%a6%82%e4%bd%95%e5%8a%a0%e8%bd%bd%e5%ad%97%e8%8a%82%e7%a0%81">如何加载字节码</h2>
+<p>用luac编译后直接加载即可。</p>
+<p>要注意默认lua字节码是区分32位和64位的，32位luac生成的字节码只能在32位虚拟机里头跑，可以按《<a href="compatible_bytecode.md">通用字节码</a>》一文处理下。</p>
+<h2 id="lua%e6%8c%81%e6%9c%89%e7%9a%84c%e5%af%b9%e8%b1%a1%e6%80%8e%e4%b9%88%e9%87%8a%e6%94%be">lua持有的c#对象怎么释放</h2>
+<p>达成下面两点即可释放：</p>
+<ul>
+<li>1、lua所有对该C#对象释放</li>
+<li>2、lua完成一次gc周期</li>
+</ul>
+<p>貌似所有gc都是上述条件，但对于lua要特别说明下第二点，lua不像C#那样会后台启动一个gc线程在做垃圾回收，而是把gc拆分成小步骤插入到有内存分配。</p>
+<p>所以注意一点：你没在运行lua代码，或者lua代码运行并未分配内存，你怎么等也不会有内存回收。</p>
+<p>默认gc配置，lua要到达上次内存回收完成时内存占用的两倍才开启一轮新的gc周期，举例上次回收完毕20M内存，那么下次要等到40M才开始一轮gc周期。</p>
+<p>按xLua的设计，一个C#对象引用传递到lua，仅让lua增加4字节内存（然而这可能是在C#侧内存占用很大的对象，比如贴图），可以看到通过持有C#引用要达成默认配置开启gc周期条件是比较困难的。</p>
+<p>这时可以这么干：</p>
+<ul>
+<li>1、设置GcPause，让gc更快开启，默认200表示2倍上次回收内存时开启，coco2dx设置为100，表示完成一趟gc后马上开启下一趟，另外也可以设置GcStepmul来加快gc回收速度，默认是200表示回收比内存分配快两倍，GcStepmul在coco2dx设置为5000</li>
+<li>2、可以在场景切换之类对于性能要求不高的地方加入全量gc调用（通过LuaEnv.FullGc或者在lua里头调用collectgarbage('collect')都可以）。</li>
+</ul>
+<h2 id="%e5%a4%9a%e7%ba%bf%e7%a8%8b%e4%b8%8b%e8%8e%ab%e5%90%8dcrash%e6%80%8e%e4%b9%88%e8%a7%a3%e5%86%b3">多线程下莫名crash怎么解决</h2>
+<p>多线程使用需要在（Player Setting/Scripting Define Symbols）下添加THREAD_SAFE宏。</p>
+<p>常见的不明显的多线程的场景，比如c#异步socket，对象析构函数等。</p>
+
+    </body>
+    </html>

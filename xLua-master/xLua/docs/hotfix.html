@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>使用方式</title>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h2 id="%e4%bd%bf%e7%94%a8%e6%96%b9%e5%bc%8f">使用方式</h2>
+<p>1、打开该特性</p>
+<p>添加HOTFIX_ENABLE宏，（在Unity3D的File-&gt;Build Setting-&gt;Scripting Define Symbols下添加）。编辑器、各手机平台这个宏要分别设置！如果是自动化打包，要注意在代码里头用API设置的宏是不生效的，需要在编辑器设置。</p>
+<p>（建议平时开发业务代码不打开HOTFIX_ENABLE，只在build手机版本或者要在编译器下开发补丁时打开HOTFIX_ENABLE）</p>
+<p>2、执行XLua/Generate Code菜单。</p>
+<p>3、注入，构建手机包这个步骤会在构建时自动进行，编辑器下开发补丁需要手动执行&quot;XLua/Hotfix Inject In Editor&quot;菜单。打印“hotfix inject finish!”或者“had injected!”才算成功，否则会打印错误信息。</p>
+<p>如果已经打印了“hotfix inject finish!”或者“had injected!”，执行xlua.hotfix仍然报类似“xlua.access, no field __Hitfix0_Update”的错误，要么是该类没配置到Hotfix列表，要么是注入成功后，又触发了编译，覆盖了注入结果。</p>
+<h2 id="%e7%ba%a6%e6%9d%9f">约束</h2>
+<p>不支持静态构造函数。</p>
+<p>目前只支持Assets下代码的热补丁，不支持引擎，c#系统库的热补丁。</p>
+<h2 id="api">API</h2>
+<p>xlua.hotfix(class, [method_name], fix)</p>
+<ul>
+<li>描述         ： 注入lua补丁</li>
+<li>class        ： C#类，两种表示方法，CS.Namespace.TypeName或者字符串方式&quot;Namespace.TypeName&quot;，字符串格式和C#的Type.GetType要求一致，如果是内嵌类型（Nested Type）是非Public类型的话，只能用字符串方式表示&quot;Namespace.TypeName+NestedTypeName&quot;；</li>
+<li>method_name  ： 方法名，可选；</li>
+<li>fix          ： 如果传了method_name，fix将会是一个function，否则通过table提供一组函数。table的组织按key是method_name，value是function的方式。</li>
+</ul>
+<p>base(csobj)</p>
+<ul>
+<li>描述         ： 子类override函数通过base调用父类实现。</li>
+<li>csobj        ： 对象</li>
+<li>返回值       ： 新对象，可以通过该对象base上的方法</li>
+</ul>
+<p>例子（位于HotfixTest2.cs）：</p>
+<pre><code class="language-lua"><div>xlua.hotfix(CS.BaseTest, <span class="hljs-string">'Foo'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, p)</span></span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">'BaseTest'</span>, p)
+    base(self):Foo(p)
+<span class="hljs-keyword">end</span>)
+</div></code></pre>
+<p>util.hotfix_ex(class, method_name, fix)</p>
+<ul>
+<li>描述         ： xlua.hotfix的增强版本，可以在fix函数里头执行原来的函数，缺点是fix的执行会略慢。</li>
+<li>method_name  ： 方法名；</li>
+<li>fix          ： 用来替换C#方法的lua function。</li>
+</ul>
+<h2 id="%e6%a0%87%e8%af%86%e8%a6%81%e7%83%ad%e6%9b%b4%e6%96%b0%e7%9a%84%e7%b1%bb%e5%9e%8b">标识要热更新的类型</h2>
+<p>和其它配置一样，有两种方式</p>
+<p>方式一：直接在类里头打Hotfix标签（不建议，示例只是为了方便演示采取这种方式）；</p>
+<p>方式二：在一个static类的static字段或者属性里头配置一个列表。属性可以用于实现的比较复杂的配置，比如根据Namespace做白名单。</p>
+<pre><code class="language-csharp"><div><span class="hljs-comment">//如果涉及到Assembly-CSharp.dll之外的其它dll，如下代码需要放到Editor目录</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title">HotfixCfg</span>
+{
+    [<span class="hljs-meta">Hotfix</span>]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> List&lt;Type&gt; by_field = <span class="hljs-keyword">new</span> List&lt;Type&gt;()
+    {
+        <span class="hljs-keyword">typeof</span>(HotFixSubClass),
+        <span class="hljs-keyword">typeof</span>(GenericClass&lt;&gt;),
+    };
+
+    [<span class="hljs-meta">Hotfix</span>]
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> List&lt;Type&gt; by_property
+    {
+        <span class="hljs-keyword">get</span>
+        {
+            <span class="hljs-keyword">return</span> (<span class="hljs-keyword">from</span> type <span class="hljs-keyword">in</span> Assembly.Load(<span class="hljs-string">"Assembly-CSharp"</span>).GetTypes()
+                    <span class="hljs-keyword">where</span> type.Namespace == <span class="hljs-string">"XXXX"</span>
+                    <span class="hljs-keyword">select</span> type).ToList();
+        }
+    }
+}
+</div></code></pre>
+<h2 id="hotfix-flag">Hotfix Flag</h2>
+<p>Hotfix标签可以设置一些标志位对生成代码及插桩定制化</p>
+<ul>
+<li>Stateless、Stateful</li>
+</ul>
+<p>遗留设置，Stateful方式在新版本已经删除，因为这种方式可以用xlua.util.state接口达到类似的效果，该接口的使用可以看下HotfixTest2.cs里的示例代码。</p>
+<p>由于没Stateful，默认就是Stateless，所以也没必要设置该标志位。</p>
+<ul>
+<li>ValueTypeBoxing</li>
+</ul>
+<p>值类型的适配delegate会收敛到object，好处是代码量更少，不好的是值类型会产生boxing及gc，适用于对text段敏感的业务。</p>
+<ul>
+<li>IgnoreProperty</li>
+</ul>
+<p>不对属性注入及生成适配代码，一般而言，大多数属性的实现都很简单，出错几率比较小，建议不注入。</p>
+<ul>
+<li>IgnoreNotPublic</li>
+</ul>
+<p>不对非public的方法注入及生成适配代码。除了像MonoBehaviour那种会被反射调用的私有方法必须得注入，其它仅被本类调用的非public方法可以不注入，只不过修复时会工作量稍大，所有引用到这个函数的public方法都要重写。</p>
+<ul>
+<li>Inline</li>
+</ul>
+<p>不生成适配delegate，直接在函数体注入处理代码。</p>
+<ul>
+<li>IntKey</li>
+</ul>
+<p>不生成静态字段，而是把所有注入点放到一个数组集中管理。</p>
+<p>好处：对text段影响小。</p>
+<p>坏处：使用不像默认方式那么方便，需要通过id来指明hotfix哪个函数，而这个id是代码注入工具时分配的，函数到id的映射会保存在Gen/Resources/hotfix_id_map.lua.txt，并且自动加时间戳备份到hotfix_id_map.lua.txt同级目录，发布手机版本后请妥善保存该文件。</p>
+<p>该文件的格式大概如下（注意：该文件仅IntKey模式使用，当你没类型指定IntKey模式注入，该文件只返回个空表）：</p>
+<pre><code class="language-lua"><div><span class="hljs-keyword">return</span> {
+    [<span class="hljs-string">"HotfixTest"</span>] = {
+        [<span class="hljs-string">".ctor"</span>] = {
+            <span class="hljs-number">5</span>
+        },
+        [<span class="hljs-string">"Start"</span>] = {
+            <span class="hljs-number">6</span>
+        },
+        [<span class="hljs-string">"Update"</span>] = {
+            <span class="hljs-number">7</span>
+        },
+        [<span class="hljs-string">"FixedUpdate"</span>] = {
+            <span class="hljs-number">8</span>
+        },
+        [<span class="hljs-string">"Add"</span>] = {
+            <span class="hljs-number">9</span>,<span class="hljs-number">10</span>
+        },
+        [<span class="hljs-string">"OnGUI"</span>] = {
+            <span class="hljs-number">11</span>
+        },
+    },
+}
+</div></code></pre>
+<p>想要替换HotfixTest的Update函数，你得</p>
+<pre><code class="language-lua"><div>CS.XLua.HotfixDelegateBridge.Set(<span class="hljs-number">7</span>, func)
+</div></code></pre>
+<p>如果是重载函数，将会一个函数名对应多个id，比如上面的Add函数。</p>
+<p>能不能自动化一些呢？可以，xlua.util提供了auto_id_map函数，执行一次后你就可以像以前那样直接用类，方法名去指明修补的函数。</p>
+<pre><code class="language-lua"><div>(<span class="hljs-built_in">require</span> <span class="hljs-string">'xlua.util'</span>).auto_id_map()
+xlua.hotfix(CS.HotfixTest, <span class="hljs-string">'Update'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self)</span></span>
+        self.tick = self.tick + <span class="hljs-number">1</span>
+        <span class="hljs-keyword">if</span> (self.tick % <span class="hljs-number">50</span>) == <span class="hljs-number">0</span> <span class="hljs-keyword">then</span>
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">'&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;Update in lua, tick = '</span> .. self.tick)
+        <span class="hljs-keyword">end</span>
+    <span class="hljs-keyword">end</span>)
+</div></code></pre>
+<p>前提是hotfix_id_map.lua.txt放到可以通过require 'hotfix_id_map'引用到的地方。</p>
+<h2 id="%e4%bd%bf%e7%94%a8%e5%bb%ba%e8%ae%ae">使用建议</h2>
+<ul>
+<li>对所有较大可能变动的类型加上Hotfix标识；</li>
+<li>建议用反射找出所有函数参数、字段、属性、事件涉及的delegate类型，标注CSharpCallLua；</li>
+<li>业务代码、引擎API、系统API，需要在Lua补丁里头高性能访问的类型，加上LuaCallCSharp；</li>
+<li>引擎API、系统API可能被代码剪裁调（C#无引用的地方都会被剪裁），如果觉得可能会新增C#代码之外的API调用，这些API所在的类型要么加LuaCallCSharp，要么加ReflectionUse；</li>
+</ul>
+<h2 id="%e6%89%93%e8%a1%a5%e4%b8%81">打补丁</h2>
+<p>xlua可以用lua函数替换C#的构造函数，函数，属性，事件的替换。lua实现都是函数，比如属性对于一个getter函数和一个setter函数，事件对应一个add函数和一个remove函数。</p>
+<ul>
+<li>函数</li>
+</ul>
+<p>method_name传函数名，支持重载，不同重载都是转发到同一个lua函数。</p>
+<p>比如：</p>
+<pre><code class="language-csharp"><div>
+<span class="hljs-comment">// 要fix的C#类</span>
+[<span class="hljs-meta">Hotfix</span>]
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">HotfixCalc</span>
+{
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">Add</span>(<span class="hljs-params"><span class="hljs-keyword">int</span> a, <span class="hljs-keyword">int</span> b</span>)</span>
+    {
+        <span class="hljs-keyword">return</span> a - b;
+    }
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Vector3 <span class="hljs-title">Add</span>(<span class="hljs-params">Vector3 a, Vector3 b</span>)</span>
+    {
+        <span class="hljs-keyword">return</span> a - b;
+    }
+｝
+
+</div></code></pre>
+<pre><code class="language-lua"><div>
+xlua.hotfix(CS.HotfixCalc, <span class="hljs-string">'Add'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, a, b)</span></span>
+    <span class="hljs-keyword">return</span> a + b
+<span class="hljs-keyword">end</span>)
+
+</div></code></pre>
+<p>静态函数和成员函数的区别是，成员函数会加一个self参数，这个self在Stateless方式下是C#对象本身（对应C#的this）</p>
+<p>普通参数对于lua的参数，ref参数对应lua的一个参数和一个返回值，out参数对于lua的一个返回值。</p>
+<p>泛化函数的打补丁规则和普通函数一样。</p>
+<ul>
+<li>构造函数</li>
+</ul>
+<p>构造函数对应的method_name是&quot;.ctor&quot;。</p>
+<p>和普通函数不一样的是，构造函数的热补丁并不是替换，而是执行原有逻辑后调用lua。</p>
+<ul>
+<li>属性</li>
+</ul>
+<p>对于名为“AProp”的属性，会对应一个getter，method_name等于get_AProp，setter的method_name等于set_AProp。</p>
+<ul>
+<li>[]操作符</li>
+</ul>
+<p>赋值对应set_Item，取值对应get_Item。第一个参数是self，赋值后面跟key，value，取值只有key参数，返回值是取出的值。</p>
+<ul>
+<li>其它操作符</li>
+</ul>
+<p>C#的操作符都有一套内部表示，比如+号的操作符函数名是op_Addition（其它操作符的内部表示可以去请参照相关资料），覆盖这函数就覆盖了C#的+号操作符。</p>
+<ul>
+<li>事件</li>
+</ul>
+<p>比如对于事件“AEvent”，+=操作符是add_AEvent，-=对应的是remove_AEvent。这两个函数均是第一个参数是self，第二个参数是操作符后面跟的delegate。</p>
+<p>通过xlua.private_accessible（版本号大于2.1.11不需要调用xlua.private_accessible）来直接访问事件对应的私有delegate的直接访问后，可以通过对象的&quot;&amp;事件名&quot;字段直接触发事件，例如self['&amp;MyEvent']()，其中MyEvent是事件名。</p>
+<ul>
+<li>析构函数</li>
+</ul>
+<p>method_name是&quot;Finalize&quot;，传一个self参数。</p>
+<p>和普通函数不一样的是，析构函数的热补丁并不是替换，而是开头调用lua函数后继续原有逻辑。</p>
+<ul>
+<li>泛化类型</li>
+</ul>
+<p>其它规则一致，需要说明的是，每个泛化类型实例化后都是一个独立的类型，只能针对实例化后的类型分别打补丁。比如：</p>
+<pre><code class="language-csharp"><div><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">GenericClass</span>&lt;<span class="hljs-title">T</span>&gt;
+{
+｝
+</div></code></pre>
+<p>你只能对GenericClass&lt;double&gt;，GenericClass&lt;int&gt;这些类，而不是对GenericClass打补丁。</p>
+<p>对GenericClass<double>打补丁的实例如下：</p>
+<pre><code class="language-csharp"><div>luaenv.DoString(<span class="hljs-string">@"
+    xlua.hotfix(CS.GenericClass(CS.System.Double), {
+        ['.ctor'] = function(obj, a)
+            print('GenericClass&lt;double&gt;', obj, a)
+        end;
+        Func1 = function(obj)
+            print('GenericClass&lt;double&gt;.Func1', obj)
+        end;
+        Func2 = function(obj)
+            print('GenericClass&lt;double&gt;.Func2', obj)
+            return 1314
+        end
+    })
+"</span>);
+</div></code></pre>
+<ul>
+<li>Unity协程</li>
+</ul>
+<p>通过util.cs_generator可以用一个function模拟一个IEnumerator，在里头用coroutine.yield，就类似C#里头的yield return。比如下面的C#代码和对应的hotfix代码是等同效果的</p>
+<pre><code class="language-csharp"><div>[<span class="hljs-meta">XLua.Hotfix</span>]
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">HotFixSubClass</span> : <span class="hljs-title">MonoBehaviour</span> {
+    <span class="hljs-function">IEnumerator <span class="hljs-title">Start</span>(<span class="hljs-params"></span>)</span>
+    {
+        <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>)
+        {
+            <span class="hljs-function"><span class="hljs-keyword">yield</span> return new <span class="hljs-title">WaitForSeconds</span>(<span class="hljs-params"><span class="hljs-number">3</span></span>)</span>;
+            Debug.Log(<span class="hljs-string">"Wait for 3 seconds"</span>);
+        }
+    }
+}
+</div></code></pre>
+<pre><code class="language-csharp"><div>luaenv.DoString(<span class="hljs-string">@"
+    local util = require 'xlua.util'
+    xlua.hotfix(CS.HotFixSubClass,{
+        Start = function(self)
+            return util.cs_generator(function()
+                while true do
+                    coroutine.yield(CS.UnityEngine.WaitForSeconds(3))
+                    print('Wait for 3 seconds')
+                end
+            end)
+        end;
+    })
+"</span>);
+</div></code></pre>
+<ul>
+<li>整个类</li>
+</ul>
+<p>如果要替换整个类，不需要一次次的调用xlua.hotfix去替换，可以整个一次完成。只要给一个table，按method_name = function组织即可</p>
+<pre><code class="language-lua"><div>
+xlua.hotfix(CS.StatefullTest, {
+    [<span class="hljs-string">'.ctor'</span>] = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(csobj)</span></span>
+        <span class="hljs-keyword">return</span> util.state(csobj, {evt = {}, start = <span class="hljs-number">0</span>, prop = <span class="hljs-number">0</span>})
+    <span class="hljs-keyword">end</span>;
+    set_AProp = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, v)</span></span>
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">'set_AProp'</span>, v)
+        self.prop = v
+    <span class="hljs-keyword">end</span>;
+    get_AProp = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self)</span></span>
+        <span class="hljs-keyword">return</span> self.prop
+    <span class="hljs-keyword">end</span>;
+    get_Item = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, k)</span></span>
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">'get_Item'</span>, k)
+        <span class="hljs-keyword">return</span> <span class="hljs-number">1024</span>
+    <span class="hljs-keyword">end</span>;
+    set_Item = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, k, v)</span></span>
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">'set_Item'</span>, k, v)
+    <span class="hljs-keyword">end</span>;
+    add_AEvent = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, cb)</span></span>
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">'add_AEvent'</span>, cb)
+        <span class="hljs-built_in">table</span>.<span class="hljs-built_in">insert</span>(self.evt, cb)
+    <span class="hljs-keyword">end</span>;
+    remove_AEvent = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, cb)</span></span>
+       <span class="hljs-built_in">print</span>(<span class="hljs-string">'remove_AEvent'</span>, cb)
+       <span class="hljs-keyword">for</span> i, v <span class="hljs-keyword">in</span> <span class="hljs-built_in">ipairs</span>(self.evt) <span class="hljs-keyword">do</span>
+           <span class="hljs-keyword">if</span> v == cb <span class="hljs-keyword">then</span>
+               <span class="hljs-built_in">table</span>.<span class="hljs-built_in">remove</span>(self.evt, i)
+               <span class="hljs-keyword">break</span>
+           <span class="hljs-keyword">end</span>
+       <span class="hljs-keyword">end</span>
+    <span class="hljs-keyword">end</span>;
+    Start = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self)</span></span>
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">'Start'</span>)
+        <span class="hljs-keyword">for</span> _, cb <span class="hljs-keyword">in</span> <span class="hljs-built_in">ipairs</span>(self.evt) <span class="hljs-keyword">do</span>
+            cb(self.start, <span class="hljs-number">2</span>)
+        <span class="hljs-keyword">end</span>
+        self.start = self.start + <span class="hljs-number">1</span>
+    <span class="hljs-keyword">end</span>;
+    StaticFunc = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(a, b, c)</span></span>
+       <span class="hljs-built_in">print</span>(a, b, c)
+    <span class="hljs-keyword">end</span>;
+    GenericTest = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self, a)</span></span>
+       <span class="hljs-built_in">print</span>(self, a)
+    <span class="hljs-keyword">end</span>;
+    Finalize = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(self)</span></span>
+       <span class="hljs-built_in">print</span>(<span class="hljs-string">'Finalize'</span>, self)
+    <span class="hljs-keyword">end</span>
+})
+
+</div></code></pre>
+
+    </body>
+    </html>

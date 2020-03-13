@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>What&Why</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        <link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+    </head>
+    <body class="vscode-light">
+        <h2 id="whatwhy">What&amp;Why</h2>
+<p>XLua目前内置的扩展库：</p>
+<ul>
+<li>针对luajit的64位整数支持；</li>
+<li>函数调用耗时以及内存泄漏定位工具；</li>
+<li>用于支持ZeroBraneStudio的luasocket库；</li>
+<li>tdr 4 lua；</li>
+</ul>
+<p>随着使用项目的增加以及项目使用的深入程度，仅有这几个扩展已经没法满足项目组了，而由于各个项目对扩展差异化比较大，以及手机平台对安装包大小的敏感，XLua是无法通过预集成去满足这些需求，这也是这篇教程的由来。</p>
+<p>这篇教程，将以lua-rapidjson为例，一步步的讲述怎么往xLua添加c/c++扩展，当然，会添加了，自然删除也就会了，项目组可以自行删除不需要用到的预集成扩展。</p>
+<h2 id="how">How</h2>
+<p>分三步</p>
+<ol>
+<li>修改build文件、工程设置，把要集成的扩展编译到XLua Plugin里头；</li>
+<li>调用xLua的C# API，使得扩展可以被按需（在lua代码里头require的时候）加载；</li>
+<li>可选，如果你的扩展里头需要用到64位整数，你可以通过XLua的64位扩展库来实现和C#的配合。</li>
+</ol>
+<h3 id="%e4%b8%80%e6%b7%bb%e5%8a%a0%e6%89%a9%e5%b1%95%e7%bc%96%e8%af%91">一、添加扩展&amp;编译</h3>
+<p>准备工作</p>
+<ol>
+<li>
+<p>把xLua的C源码包解压到你Unity工程的Assets同级目录下。</p>
+<p>下载lua-rapidjson代码，按你的习惯放置。本教程是把rapidjson头文件放到<span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>U</mi><mi>n</mi><mi>i</mi><mi>t</mi><mi>y</mi><mi>P</mi><mi>r</mi><mi>o</mi><mi>j</mi><mstyle mathcolor="#cc0000"><mtext>\build</mtext></mstyle><mstyle mathcolor="#cc0000"><mtext>\lua</mtext></mstyle><mo>−</mo><mi>r</mi><mi>a</mi><mi>p</mi><mi>i</mi><mi>d</mi><mi>j</mi><mi>s</mi><mi>o</mi><mi>n</mi><mstyle mathcolor="#cc0000"><mtext>\include</mtext></mstyle><mi mathvariant="normal">目</mi><mi mathvariant="normal">录</mi><mi mathvariant="normal">下</mi><mi mathvariant="normal">，</mi><mi mathvariant="normal">而</mi><mi mathvariant="normal">扩</mi><mi mathvariant="normal">展</mi><mi mathvariant="normal">的</mi><mi mathvariant="normal">源</mi><mi mathvariant="normal">码</mi><mi>r</mi><mi>a</mi><mi>p</mi><mi>i</mi><mi>d</mi><mi>j</mi><mi>s</mi><mi>o</mi><mi>n</mi><mi mathvariant="normal">.</mi><mi>c</mi><mi>p</mi><mi>p</mi><mi mathvariant="normal">放</mi><mi mathvariant="normal">到</mi></mrow><annotation encoding="application/x-tex">UnityProj\build\lua-rapidjson\include目录下，而扩展的源码rapidjson.cpp放到</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">U</span><span class="mord mathdefault">n</span><span class="mord mathdefault">i</span><span class="mord mathdefault">t</span><span class="mord mathdefault" style="margin-right:0.03588em;">y</span><span class="mord mathdefault" style="margin-right:0.13889em;">P</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.05724em;">j</span><span class="mord text" style="color:#cc0000;"><span class="mord" style="color:#cc0000;">\build</span></span><span class="mord text" style="color:#cc0000;"><span class="mord" style="color:#cc0000;">\lua</span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">a</span><span class="mord mathdefault">p</span><span class="mord mathdefault">i</span><span class="mord mathdefault">d</span><span class="mord mathdefault" style="margin-right:0.05724em;">j</span><span class="mord mathdefault">s</span><span class="mord mathdefault">o</span><span class="mord mathdefault">n</span><span class="mord text" style="color:#cc0000;"><span class="mord" style="color:#cc0000;">\include</span></span><span class="mord cjk_fallback">目</span><span class="mord cjk_fallback">录</span><span class="mord cjk_fallback">下</span><span class="mord cjk_fallback">，</span><span class="mord cjk_fallback">而</span><span class="mord cjk_fallback">扩</span><span class="mord cjk_fallback">展</span><span class="mord cjk_fallback">的</span><span class="mord cjk_fallback">源</span><span class="mord cjk_fallback">码</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">a</span><span class="mord mathdefault">p</span><span class="mord mathdefault">i</span><span class="mord mathdefault">d</span><span class="mord mathdefault" style="margin-right:0.05724em;">j</span><span class="mord mathdefault">s</span><span class="mord mathdefault">o</span><span class="mord mathdefault">n</span><span class="mord">.</span><span class="mord mathdefault">c</span><span class="mord mathdefault">p</span><span class="mord mathdefault">p</span><span class="mord cjk_fallback">放</span><span class="mord cjk_fallback">到</span></span></span></span>UnityProj\build\lua-rapidjson\source目录下（注：$UnityProj指的是你工程的目录）</p>
+</li>
+<li>
+<p>在CMakeLists.txt加入扩展</p>
+<p>xLua的各平台Plugins编译使用cmake编译，好处是所有平台的编译都写在一个makefile，大部分编译处理逻辑是跨平台的。</p>
+<p>xLua配套的CMakeLists.txt为第三方扩展提供了扩展点（都是list）：</p>
+<ol>
+<li>THIRDPART_INC：第三方扩展的头文件搜索路径。</li>
+<li>THIRDPART_SRC：第三方扩展的源代码。</li>
+<li>THIRDPART_LIB：第三方扩展依赖的库。</li>
+</ol>
+<p>如下是rapidjson的加法</p>
+<pre><code> #begin lua-rapidjson
+ set (RAPIDJSON_SRC lua-rapidjson/source/rapidjson.cpp)
+ set_property(
+     SOURCE ${RAPIDJSON_SRC}
+     APPEND
+     PROPERTY COMPILE_DEFINITIONS
+     LUA_LIB
+ )
+ list(APPEND THIRDPART_INC  lua-rapidjson/include)
+ set (THIRDPART_SRC ${THIRDPART_SRC} ${RAPIDJSON_SRC})
+ #end lua-rapidjson
+</code></pre>
+<p>完整代码请见附件。</p>
+</li>
+<li>
+<p>各平台编译</p>
+<p>所有编译脚本都是按这个方式命名：make_平台_lua版本.后缀。</p>
+<p>比如windows 64位lua53版本是make_win64_lua53.bat，android的luajit版本是make_android_luajit.sh，要编译哪个版本就执行相应的脚本即可。</p>
+<p>执行完编译脚本会自动拷贝到plugin_lua53或者plugin_luajit目录，前者是lua53版本放置路径，后者是luajit。</p>
+<p>配套的android脚本是在linux下使用的，脚本开头的NDK路径要根据实际情况修改。</p>
+</li>
+</ol>
+<h3 id="%e4%ba%8cc%e4%be%a7%e9%9b%86%e6%88%90">二、C#侧集成</h3>
+<p>所有lua的C扩展库都会提供个luaopen_xxx的函数，xxx是动态库的名字，比如lua-rapidjson库该函数是luaopen_rapidjson，这类函数由lua虚拟机在加载动态库时自动调用，而在手机平台，由于ios的限制我们加载不了动态库，而是直接编译进进程里头。</p>
+<p>为此，XLua提供了一个API来替代这功能（LuaEnv的成员方法）：</p>
+<pre><code>public void AddBuildin(string name, LuaCSFunction initer)
+</code></pre>
+<p>参数：</p>
+<pre><code>name：buildin模块的名字，require时输入的参数；
+initer：初始化函数，原型是这样的public delegate int lua_CSFunction(IntPtr L)，必须是静态函数，而且带MonoPInvokeCallbackAttribute属性修饰，这个api会检查这两个条件。
+</code></pre>
+<p>我们以luaopen_rapidjson的调用来看看怎么使用。</p>
+<p>扩展LuaDLL.Lua类，用pinvoke把luaopen_rapidjson导出到C#，然后写一个符合lua_CSFunction定义的静态函数，你可以在里头做写初始化工作，比如luaopen_rapidjson的调用，以下是完整代码：</p>
+<pre><code>namespace LuaDLL
+{ 
+    public partial class Lua
+    { 
+        [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int luaopen_rapidjson(System.IntPtr L);
+
+        [MonoPInvokeCallback(typeof(LuaDLL.lua_CSFunction))]
+        public static int LoadRapidJson(System.IntPtr L)
+        {
+            return luaopen_rapidjson(L);
+        }
+    }
+}
+</code></pre>
+<p>然后调用AddBuildin：</p>
+<pre><code>luaenv.AddBuildin(&quot;rapidjson&quot;, LuaDLL.Lua.LoadRapidJson);
+</code></pre>
+<p>然后就ok了，在lua代码中试试该扩展：</p>
+<pre><code>local rapidjson = require('rapidjson')
+local t = rapidjson.decode('{&quot;a&quot;:123}')
+print(t.a)
+t.a = 456
+local s = rapidjson.encode(t)
+print('json', s)
+</code></pre>
+<h3 id="%e4%b8%8964%e4%bd%8d%e6%94%b9%e9%80%a0">三、64位改造</h3>
+<p>把i64lib.h文件include到需要64位改造的文件里头。
+该头文件的API就以下几个：</p>
+<pre><code>//往栈上放一个int64/uint64
+void lua_pushint64(lua_State* L, int64_t n);
+void lua_pushuint64(lua_State* L, uint64_t n);
+//判断栈上pos位置是否是int64/uint64
+int lua_isint64(lua_State* L, int pos);
+int lua_isuint64(lua_State* L, int pos);
+//从栈上pos位置取一个int64/uint64
+int64_t lua_toint64(lua_State* L, int pos);
+uint64_t lua_touint64(lua_State* L, int pos);
+</code></pre>
+<p>这些API的使用依情况而定，可以看看本文附带的附件（rapidjson.cpp文件）</p>
+<p>编译工程相关修改</p>
+
+    </body>
+    </html>
